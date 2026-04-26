@@ -1,19 +1,59 @@
 import streamlit as st
 from reviewer import review_code
+from github_utils import *
 import re
 
-st.set_page_config(page_title="AI Code Mentor", layout="wide")
+def section_header(icon, text, size=18):
+    return f"""
+    <div style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+        <span style="font-size:{size}px;">{icon}</span>
+        <span style="font-size:22px; font-weight:600;">{text}</span>
+    </div>
+    """
 
+# ------------------ Helpers ------------------
+
+def detect_language_from_filename(filename):
+    ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
+    ext_map = {
+        "py": "Python",
+        "js": "JavaScript",
+        "java": "Java",
+        "cpp": "C++",
+        "c": "C",
+        "txt": "Python",
+    }
+    return ext_map.get(ext, "Python")
+
+
+def split_output(text):
+    try:
+        issues = text.split("IMPROVED_CODE:")[0].replace("ISSUES:", "").strip()
+        code_part = text.split("IMPROVED_CODE:")[1].split("EXPLANATION:")[0].strip()
+        explanation = text.split("EXPLANATION:")[1].strip()
+        return issues, code_part, explanation
+    except:
+        return text, "", ""
+
+
+# ------------------ App Setup ------------------
+
+st.set_page_config(page_title="AI Code Mentor", layout="wide")
 st.title("🧠 AI Code Mentor for Students")
 
-# Session state
-if "result" not in st.session_state:
-    st.session_state.result = ""
+# Session State
+if "upload_result" not in st.session_state:
+    st.session_state.upload_result = None
+
+if "repo_results" not in st.session_state:
+    st.session_state.repo_results = []
 
 if "code" not in st.session_state:
     st.session_state.code = ""
 
-# Sidebar
+
+# ------------------ Sidebar ------------------
+
 with st.sidebar:
     st.header("⚙️ Settings")
 
@@ -38,93 +78,111 @@ with st.sidebar:
         st.session_state.code = uploaded_file.read().decode("utf-8")
         st.success("File loaded!")
 
-    if st.button("📌 Load Example"):
-        st.session_state.code = """def divide(a, b):
-    return a / b
+    repo_url = st.text_input("🔗 Enter GitHub Repo URL")
+    repo_file_limit = st.slider("📚 Repo files to analyze", 1, 10, 2)
 
-print(divide(10, 0))"""
-        #st.rerun()
+    if st.button("🧪 Analyze Upload + Repo"):
 
-    if st.button("🔄 Reset"):
-        st.session_state.result = ""
+        st.session_state.upload_result = None
+        st.session_state.repo_results = []
+
+        # -------- Upload --------
+        if st.session_state.code.strip():
+            with st.spinner("Analyzing uploaded file..."):
+                st.session_state.upload_result = review_code(
+                    st.session_state.code, language, mode
+                )
+
+        # -------- Repo --------
+        if repo_url.strip():
+
+            try:
+                # ✅ Reset results
+                st.session_state.repo_results = []
+
+                user, repo = parse_github_url(repo_url)
+
+                if not user or not repo:
+                    st.error("Invalid GitHub URL")
+                    st.stop()
+
+                files = get_repo_files(user, repo)
+
+                if not isinstance(files, list) or len(files) == 0:
+                    st.error("Failed to fetch repository files")
+                    st.stop()
+
+                code_files = get_code_files(files)
+
+                for file in code_files[:repo_file_limit]:
+                    try:
+                        download_url = file.get("download_url")
+
+                        if not download_url:
+                            continue
+
+                        content = get_file_content(download_url)
+
+                        if not isinstance(content, str) or not content.strip():
+                            continue
+
+                        repo_lang = detect_language_from_filename(file.get("name", ""))
+
+                        with st.spinner(f"Analyzing {file.get('name', 'file')}..."):
+                            result = review_code(content, repo_lang, mode)
+
+                        st.session_state.repo_results.append({
+                            "file_name": file.get("name", "unknown"),
+                            "result": result,
+                            "language": repo_lang
+                        })
+
+                    except Exception as file_error:
+                        st.warning(f"Skipped file: {file_error}")
+                        continue
+
+                # ✅ THIS was causing your error (must be inside try)
+                st.success("Analysis complete!")
+
+            except Exception as e:
+                st.error(f"Repo error: {e}")
+
+    if st.button("🔄 Reset App"):
+        st.session_state.upload_result = None
+        st.session_state.repo_results = []
         st.session_state.code = ""
-        #st.rerun()
+        st.session_state.reset_trigger = True
+        st.rerun()
 
-# Code editor
+
+# ------------------ Code Editor ------------------
+
 st.markdown("## 📝 Code Editor")
 
+if "reset_trigger" in st.session_state and st.session_state.reset_trigger:
+    st.session_state.code = ""
+    st.session_state.reset_trigger = False
+    
 code = st.text_area(
     "Paste your code here",
     height=350,
     key="code"
 )
 
-
-#st.session_state.code = code
-
-review_clicked = st.button("🚀 Review Code")
-
-if review_clicked:
+if st.button("🚀 Review Code"):
     if code.strip():
-        with st.spinner(f"Reviewing {language} code in {mode} mode..."):
-            st.session_state.result = review_code(code, language, mode)
+        with st.spinner("Analyzing code..."):
+            st.session_state.upload_result = review_code(code, language, mode)
+            st.session_state.repo_results = []
     else:
         st.warning("Please enter some code")
 
-# ================= RESULT SECTION =================
-if st.session_state.result:
 
-    result = st.session_state.result
+# ------------------ Results ------------------
 
-    # 🔥 CLEAN UNWANTED HEADINGS
-    result = re.sub(r"IMPROVED CODE\s*", "", result, flags=re.IGNORECASE)
-    result = re.sub(r"FIXED_CODE\s*", "", result, flags=re.IGNORECASE)
-    result = re.sub(r"\*\*", "", result)
+if st.session_state.upload_result or st.session_state.repo_results:
 
-    # 🔥 EXTRACT CODE BLOCKS
-    code_blocks = re.findall(r"```(?:\w+)?\n(.*?)```", result, re.DOTALL)
-
-    if code_blocks:
-        clean_code = "\n\n".join([block.strip() for block in code_blocks])
-    else:
-        clean_code = ""
-
-    # 🔥 OPTIONAL: REMOVE COMMENTS & DOCSTRINGS
-    if mode == "Production" and clean_code:
-        clean_code = re.sub(r'""".*?"""', '', clean_code, flags=re.DOTALL)
-        clean_code = "\n".join(
-            line for line in clean_code.split("\n")
-            if not line.strip().startswith("#")
-        )
-
-    # 🔥 REMOVE CODE FROM TEXT OUTPUT
-    text_output = re.sub(r"```(?:\w+)?\n.*?```", "", result, flags=re.DOTALL)
-
-    # SPLIT issues & explanation
-    issues = ""
-    explanation = ""
-
-    exp_match = re.search(r"(EXPLANATION|Explanation)\s*:?\s*(.*)", text_output, re.DOTALL)
-
-    if exp_match:
-        explanation = exp_match.group(2).strip()
-        issues = text_output[:exp_match.start()].strip()
-    else:
-        issues = text_output.strip()
-
-    # UI
     st.markdown("## 📊 Code Insights")
-    st.info("💡 Tip: Select same language to avoid conversion.")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.caption("Lines of Code")
-        st.write(len(code.split("\n")))
-
-    with col2:
-        st.caption("Mode")
-        st.write(mode)
 
     tab1, tab2, tab3 = st.tabs([
         "📌 Issues",
@@ -132,41 +190,68 @@ if st.session_state.result:
         "📖 Explanation (Improved Code)"
     ])
 
-    # 🔹 Issues Tab
+    # ------------------ Issues ------------------
     with tab1:
-        st.markdown(issues)
 
-    # 🔹 Original Code
+        # Upload
+        if st.session_state.upload_result:
+            st.markdown(section_header("📂", "Uploaded File"),unsafe_allow_html=True)
+            issues, _, _ = split_output(st.session_state.upload_result)
+            st.markdown(issues)
+            st.divider()
+
+        # Repo
+        for file in st.session_state.repo_results:
+            st.markdown(section_header("📁", f"{file['file_name']}"),unsafe_allow_html=True)
+            issues, _, _ = split_output(file["result"])
+            st.markdown(issues)
+            st.divider()
+
+    # ------------------ Original Code ------------------
     with tab2:
-        st.caption("Original Code")
-        st.code(code, language=language.lower(), line_numbers=True)
 
-    # 🔹 Explanation + Improved Code
+        if st.session_state.upload_result:
+            st.markdown(section_header("📂", "Uploaded File"),unsafe_allow_html=True)
+            st.code(code, language=language.lower(), line_numbers=True)
+            st.divider()
+
+        for file in st.session_state.repo_results:
+            st.markdown(section_header("📁", f"{file['file_name']}"),unsafe_allow_html=True)
+            st.caption("Original code preview not shown")
+            st.divider()
+
+    # ------------------ Explanation + Improved ------------------
     with tab3:
-        st.markdown(explanation)
 
-        if clean_code:
-            st.markdown("### 💻 Improved Code")
+        # Upload
+        if st.session_state.upload_result:
+            st.markdown(section_header("📂", "Uploaded File"),unsafe_allow_html=True)
 
-            st.code(clean_code, language=language.lower(), line_numbers=True)
-
-            # File extension mapping
-            ext_map = {
-                "Python": "py",
-                "JavaScript": "js",
-                "Java": "java",
-                "C++": "cpp",
-                "C": "c"
-            }
-
-            file_ext = ext_map.get(language, "txt")
-
-            st.download_button(
-                "⬇ Download Improved Code",
-                clean_code,
-                f"improved_code.{file_ext}",
-                mime="text/plain"
+            _, improved_code, explanation = split_output(
+                st.session_state.upload_result
             )
 
+            st.markdown(explanation)
+
+            if improved_code:
+                st.markdown(section_header("💻", "Improved Code"),unsafe_allow_html=True)
+                st.code(improved_code, language=language.lower(), line_numbers=True)
+
+            st.divider()
+
+        # Repo
+        for file in st.session_state.repo_results:
+            st.markdown(section_header("📁", f"{file['file_name']}"),unsafe_allow_html=True)
+
+            _, improved_code, explanation = split_output(file["result"])
+
+            st.markdown(explanation)
+
+            if improved_code:
+                st.markdown(section_header("💻", "Improved Code"),unsafe_allow_html=True)
+                st.code(improved_code, language=file["language"].lower(), line_numbers=True)
+
+            st.divider()
+
 else:
-    st.info("👈 Paste your code and click 'Review Code'")
+    st.info("👈 Upload code or enter repo to start analysis")
