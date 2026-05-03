@@ -67,138 +67,160 @@ if "analysis_source" not in st.session_state:
 if "clear_uploaded_file" not in st.session_state:
     st.session_state.clear_uploaded_file = False
 
+if "show_editor" not in st.session_state:
+    st.session_state.show_editor = False
+
+if "previous_show_editor" not in st.session_state:
+    st.session_state.previous_show_editor = False
+
+if "language" not in st.session_state:
+    st.session_state.language = "Python"
+
 
 # ------------------ Sidebar ------------------
 
 with st.sidebar:
     st.header("⚙️ Settings")
-
-    language = st.selectbox(
-        "💻 Language",
-        ["Python", "JavaScript", "Java", "C++", "C"],
-        key="language"
-    )
-
     mode = st.selectbox(
         "🎯 Mode",
         ["Beginner", "Production"],
         key="mode"
     )
 
+    show_editor = st.checkbox("📝 Use Code Editor", key="show_editor")
+
     st.divider()
 
-    # ------------------ INPUT SOURCE TABS ------------------
-    input_source = st.radio(
-        "Input source",
-        ["📁 Upload File", "🔗 GitHub Repo"],
-        horizontal=True,
-        key="input_source",
-    )
+    # ------------------ INPUT SOURCE / Editor Toggle ------------------
+    if st.session_state.get("show_editor"):
+        st.info("Editor enabled: Upload and GitHub inputs hidden.")
 
-    if st.session_state.previous_input != input_source:
-        if input_source == "🔗 GitHub Repo":
+        # Only clear upload/repo state when editor is newly enabled
+        if not st.session_state.get("previous_show_editor", False):
             st.session_state.upload_code = ""
             st.session_state.upload_result = None
-            st.session_state.analysis_source = None
-        else:
+            st.session_state.clear_uploaded_file = True
             st.session_state.repo_results = []
-            # Clear editor when switching to upload source so previous text doesn't persist
-            st.session_state.editor_code = ""
+            st.session_state.repo_file_list = []
 
-        st.session_state.previous_input = input_source
-
-    # ================== UPLOAD FILE TAB ==================
-    if input_source == "📁 Upload File":
-
-        # If a previous action requested clearing the file uploader, remove the widget state
-        if st.session_state.get("clear_uploaded_file"):
-            if "uploaded_file" in st.session_state:
-                st.session_state.pop("uploaded_file", None)
-            st.session_state.clear_uploaded_file = False
-
-        uploaded_file = st.file_uploader(
-            "Choose file",
-            type=["py", "js", "java", "cpp", "c", "txt"],
-            key="uploaded_file",
-        )
-
-        if uploaded_file:
-            st.session_state.upload_code = uploaded_file.read().decode("utf-8")
-            # Clear editor input when a file is uploaded to avoid mixed provenance
-            st.session_state.editor_code = ""
-            st.success("File uploaded successfully")
-
-        if st.session_state.upload_code:
-            st.caption(f"Selected: {uploaded_file.name if uploaded_file else 'file'}")
-
-            if st.button("🔍 Analyze File"):
-                with st.spinner("Analyzing file..."):
-                    st.session_state.upload_result = review_code(
-                        st.session_state.upload_code, language, mode
-                    )
-                    st.session_state.analysis_source = "upload"
-                    st.session_state.repo_results = []
-
-    # ================== GITHUB REPO TAB ==================
     else:
 
-        repo_url = st.text_input("GitHub repo URL", key="repo_url")
+        # ------------------ INPUT SOURCE TABS ------------------
+        input_source = st.radio(
+            "Input source",
+            ["📁 Upload File", "🔗 GitHub Repo"],
+            horizontal=True,
+            key="input_source",
+        )
 
-        if st.button("📥 Load Repo Files"):
+        if st.session_state.previous_input != input_source:
+            if input_source == "🔗 GitHub Repo":
+                st.session_state.upload_code = ""
+                st.session_state.upload_result = None
+                st.session_state.analysis_source = None
+            else:
+                st.session_state.repo_results = []
+                # Clear editor when switching to upload source so previous text doesn't persist
+                st.session_state.editor_code = ""
 
-            try:
-                user, repo = parse_github_url(repo_url)
+            st.session_state.previous_input = input_source
 
-                if not user or not repo:
-                    st.error("Invalid GitHub URL")
-                    st.stop()
+        # ================== UPLOAD FILE TAB ==================
+        if input_source == "📁 Upload File":
 
-                files = get_repo_files(user, repo)
+            # If a previous action requested clearing the file uploader, remove the widget state
+            if st.session_state.get("clear_uploaded_file"):
+                if "uploaded_file" in st.session_state:
+                    st.session_state.pop("uploaded_file", None)
+                st.session_state.clear_uploaded_file = False
 
-                code_files = get_code_files(files)
+            uploaded_file = st.file_uploader(
+                "Choose file",
+                type=["py", "js", "java", "cpp", "c", "txt"],
+                key="uploaded_file",
+            )
 
-                # store files in session
-                st.session_state.repo_file_list = code_files
+            if uploaded_file:
+                st.session_state.upload_code = uploaded_file.read().decode("utf-8")
+                # Clear editor input when a file is uploaded to avoid mixed provenance
+                st.session_state.editor_code = ""
+                # detect language from filename for uploaded files
+                st.session_state.language = detect_language_from_filename(uploaded_file.name)
+                st.success("File uploaded successfully")
 
-                st.success("Repo loaded successfully!")
+            if st.session_state.upload_code:
+                st.caption(f"Selected: {uploaded_file.name if uploaded_file else 'file'}")
 
-            except Exception as e:
-                st.error(f"Error: {e}")
+                if st.button("🔍 Analyze File"):
+                    with st.spinner("Analyzing file..."):
+                        st.session_state.upload_result = review_code(
+                            st.session_state.upload_code, st.session_state.get("language", "Python"), mode
+                        )
+                        st.session_state.analysis_source = "upload"
+                        st.session_state.repo_results = []
 
-        # ---------- FILE SELECTION ----------
-        selected_files = []
+        # ================== GITHUB REPO TAB ==================
+        else:
 
-        if "repo_file_list" in st.session_state:
+            repo_url = st.text_input("GitHub repo URL", key="repo_url")
 
-            st.markdown("### Select repo files to analyze")
+            if st.button("📥 Load Repo Files"):
 
-            for file in st.session_state.repo_file_list:
-                if st.checkbox(file["name"], key=file["name"]):
-                    selected_files.append(file)
-
-        # ---------- ANALYZE REPO ----------
-        if st.button("🔗 Analyze Repo"):
-
-            st.session_state.repo_results = []
-
-            for file in selected_files:
                 try:
-                    content = get_file_content(file["download_url"])
-                    repo_lang = detect_language_from_filename(file["name"])
+                    user, repo = parse_github_url(repo_url)
 
-                    with st.spinner(f"Analyzing {file['name']}..."):
-                        result = review_code(content, repo_lang, mode)
+                    if not user or not repo:
+                        st.error("Invalid GitHub URL")
+                        st.stop()
 
-                    st.session_state.repo_results.append({
-                        "file_name": file["name"],
-                        "result": result,
-                        "language": repo_lang
-                    })
+                    files = get_repo_files(user, repo)
+
+                    code_files = get_code_files(files)
+
+                    # store files in session
+                    st.session_state.repo_file_list = code_files
+
+                    st.success("Repo loaded successfully!")
 
                 except Exception as e:
-                    st.warning(f"Skipped {file['name']}")
+                    st.error(f"Error: {e}")
 
-            st.success("Analysis complete!")
+            # ---------- FILE SELECTION ----------
+            selected_files = []
+
+            if "repo_file_list" in st.session_state:
+
+                st.markdown("### Select repo files to analyze")
+
+                for file in st.session_state.repo_file_list:
+                    if st.checkbox(file["name"], key=file["name"]):
+                        selected_files.append(file)
+
+            # ---------- ANALYZE REPO ----------
+            if st.button("🔗 Analyze Repo"):
+
+                st.session_state.repo_results = []
+
+                for file in selected_files:
+                    try:
+                        content = get_file_content(file["download_url"])
+                        repo_lang = detect_language_from_filename(file["name"])
+
+                        with st.spinner(f"Analyzing {file['name']}..."):
+                            result = review_code(content, repo_lang, mode)
+
+                        st.session_state.repo_results.append({
+                            "file_name": file["name"],
+                            "result": result,
+                            "language": repo_lang
+                        })
+
+                    except Exception as e:
+                        st.warning(f"Skipped {file['name']}")
+
+                st.success("Analysis complete!")
+
+    st.session_state.previous_show_editor = st.session_state.get("show_editor", False)
 
     st.divider()
 
@@ -212,36 +234,44 @@ with st.sidebar:
 
 # ------------------ Code Editor ------------------
 
-st.markdown("## 📝 Code Editor")
+# Render editor only when toggle is enabled in the sidebar
+if st.session_state.get("show_editor"):
 
-if "reset_trigger" in st.session_state and st.session_state.reset_trigger:
-    st.session_state.editor_code = ""
-    st.session_state.reset_trigger = False
-    
-code = st.text_area(
-    "Paste your code here",
-    height=350,
-    key="editor_code"
-)
+    st.markdown("## 📝 Code Editor")
 
-if st.button("🚀 Review Code"):
-    if code.strip():
-        with st.spinner("Analyzing code..."):
-            st.session_state.upload_result = review_code(code, language, mode)
-            st.session_state.analysis_source = "editor"
-           
-            st.session_state.upload_code = ""
-            #st.session_state.upload_result = None
-            
-            st.session_state.clear_uploaded_file = True
-            st.session_state.repo_results = []
-            
-            st.rerun()
-    else:
-        st.warning("Please enter some code")
+    if "reset_trigger" in st.session_state and st.session_state.reset_trigger:
+        st.session_state.editor_code = ""
+        st.session_state.reset_trigger = False
+
+    code = st.text_area(
+        "Paste your code here",
+        height=350,
+        key="editor_code"
+    )
+
+    if st.button("🚀 Review Code", key="review_editor"):
+        if st.session_state.editor_code.strip():
+            with st.spinner("Analyzing code..."):
+                # Editor default language is Python
+                st.session_state.language = "Python"
+                st.session_state.upload_result = review_code(
+                    st.session_state.editor_code, "Python", st.session_state.get("mode", "Beginner")
+                )
+                st.session_state.analysis_source = "editor"
+
+                st.session_state.upload_code = ""
+                st.session_state.clear_uploaded_file = True
+                st.session_state.repo_results = []
+
+                st.rerun()
+        else:
+            st.warning("Please enter some code")
 
 
 # ------------------ Results ------------------
+
+# current language for upload/editor displays
+language = st.session_state.get("language", "Python")
 
 if st.session_state.upload_result or st.session_state.repo_results:
 

@@ -46,6 +46,9 @@ def beginner_prompt(code: str, language: str) -> str:
         - Explain in plain language
         - Add comments only where logic is not obvious
         - Keep original intent and behavior unless fixing a bug
+        - Preserve variable names, function names, and overall flow unless a change is necessary
+        - Prefer minimal edits over full rewrites
+        - Do not introduce new abstractions/classes unless they solve a clear issue in this snippet
 
         Quality rules:
         - Focus only on the given code
@@ -77,6 +80,8 @@ def production_prompt(code: str, language: str) -> str:
         - Keep code clean, minimal, and professional
         - Preserve expected behavior unless current behavior is clearly broken
         - Avoid over-engineering
+        - Preserve structure and naming where possible; avoid large rewrites for small issues
+        - Make the smallest safe set of changes that addresses the identified issues
 
         Quality rules:
         - Focus only on the given code
@@ -111,6 +116,8 @@ def repo_prompt(code: str, file_name: str, language: str) -> str:
         - Do not repeat generic advice
         - Keep findings concise, concrete, and file-specific
         - Keep changes compatible with likely surrounding code
+        - Keep patch size small and avoid changing architecture within a single-file review
+        - Preserve public behavior and naming unless a change is required for correctness
 
         Quality rules:
         - Mention only meaningful issues
