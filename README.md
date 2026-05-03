@@ -36,21 +36,23 @@ An intelligent code review assistant built with Streamlit that helps students an
 - AI: LLM-based code review (Groq/OpenAI)  
 - Version Control: GitHub
 
+---
+
 ## 🧪 How to Use
 
 -🔘Toggle Code Editor
-    -Enable the "Show Code Editor" toggle
-    -Paste your code into the editor
-    -Click "Review Code"
-    -Results will be shown under Code Insights
+    - Enable the "Show Code Editor" toggle
+    - Paste your code into the editor
+    - Click "Review Code"
+    - Results will be shown under Code Insights
 
 -📁Upload File
-    -Select Upload File
-    -Choose a supported file
-    -Click "Analyze File"
+    - Select Upload File
+    - Choose a supported file
+    - Click "Analyze File"
 
 -🔗GitHub Repo
-    -Select GitHub Repo
-    -Paste repository URL
-    -Load files and select desired ones
-    -Click "Analyze Repo"
+    - Select GitHub Repo
+    - Paste repository URL
+    - Load files and select desired ones
+    - Click "Analyze Repo"
