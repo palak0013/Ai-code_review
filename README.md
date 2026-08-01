@@ -1,62 +1,143 @@
-# 🧠 AI Code Mentor for Students
+# AI Code Review Assistant
 
-An intelligent code review assistant built with Streamlit that helps students analyze, debug, and improve their code with clear explanations.
-
----
-
-## 🚀 Features
-
-- ✍️ Code Editor Review  
-  Paste your code and get instant feedback  
-
-- 📁 File Upload Support  
-  Upload `.py`, `.js`, `.java`, `.cpp`, `.c`, `.txt` files  
-
-- 🔗 GitHub Repo Analysis  
-  Analyze multiple files directly from a repository  
-
-- 📊 Detailed Code Insights  
-  - Issues detection  
-  - Improved code suggestions  
-  - Explanation of fixes  
-
-- 🎯 Modes  
-  - Beginner → simple explanations  
-  - Production → optimized suggestions  
-
-- 💻 Multi-language Support  
-  Python, JavaScript, Java, C++, C  
+An AI-powered code review application built with **Python** and **Streamlit** that analyzes uploaded source files, pasted code, and GitHub repositories. The application provides intelligent feedback on code quality, identifies potential issues, suggests improvements, and explains recommended changes to help developers write cleaner and more maintainable code.
 
 ---
 
-## 🛠️ Tech Stack
+## Features
 
-- Frontend: Streamlit  
-- Backend: Python  
-- AI: LLM-based code review (Groq/OpenAI)  
-- Version Control: GitHub
+- Analyze source code by uploading files
+- Review public GitHub repositories
+- Paste code directly using the built-in editor
+- Supports Beginner and Production review modes
+- Detects common coding issues and best practice violations
+- Generates improved code suggestions with explanations
+- Syntax-highlighted code display
+- Supports multiple programming languages
+
+### Supported Languages
+
+- Python
+- Java
+- JavaScript
+- C
+- C++
 
 ---
 
-## 🧪 How to Use
+## Tech Stack
 
--🔘Toggle Code Editor
+| Category | Technology |
+|----------|------------|
+| Frontend | Streamlit |
+| Backend | Python |
+| AI Model | Groq LLM |
+| Version Control | Git & GitHub |
 
-    • Enable the "Show Code Editor" toggle
-    • Paste your code into the editor
-    • Click "Review Code"
-    • Results will be shown under Code Insights
+---
 
--📁Upload File
+## Project Structure
 
-     • Select Upload File
-     • Choose a supported file
-     • Click "Analyze File"
+```text
+AI-CODE/
+│
+├── app.py
+├── reviewer.py
+├── github_utils.py
+├── prompts.py
+├── requirements.txt
+├── README.md
+└── .env
+```
 
--🔗GitHub Repo
+---
 
-     • Select GitHub Repo
-     • Paste repository URL
-     • Load files and select desired ones
-     • Click "Analyze Repo"
-     
+## Installation
+
+### Clone the repository
+
+```bash
+git clone https://github.com/your-username/your-repository.git
+cd your-repository
+```
+
+### Create a virtual environment
+
+```bash
+python -m venv venv
+```
+
+### Activate the environment
+
+Windows
+
+```bash
+venv\Scripts\activate
+```
+
+Linux / macOS
+
+```bash
+source venv/bin/activate
+```
+
+### Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the project root.
+
+```env
+GROQ_API_KEY=your_api_key
+```
+
+---
+
+## Run the Application
+
+```bash
+streamlit run app.py
+```
+
+---
+
+## Usage
+
+### Upload File
+
+1. Select **Upload File**
+2. Upload a supported source file
+3. Click **Analyze File**
+
+### GitHub Repository
+
+1. Select **GitHub Repo**
+2. Enter a public GitHub repository URL
+3. Click **Load Repo Files**
+4. Select the files to analyze
+5. Click **Analyze Repo**
+
+### Code Editor
+
+1. Enable **Use Code Editor**
+2. Paste your source code
+3. Click **Review Code**
+
+---
+
+## Sample Review
+
+The application analyzes code and provides:
+
+- Detected issues
+- Suggested improvements
+- Improved implementation
+- Explanation of recommendations
+
+---
