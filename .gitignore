@@ -3,3 +3,5 @@ __pycache__/
 .env
 .vscode/
 *.pyc
+Resume_Template.pdf
+*.pdf

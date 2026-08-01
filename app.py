@@ -36,8 +36,9 @@ def split_output(text):
         return text, "", ""
 # ------------------ App Setup ------------------
 
-st.set_page_config(page_title="AI Code Mentor", layout="wide")
-st.title("🧠 AI Code Mentor for Students")
+st.set_page_config(page_title="AI Code Review Assistant", layout="wide")
+st.title("AI Code Review Assistant")
+st.caption("Review source code, analyze GitHub repositories, and receive AI-powered suggestions for bugs, performance, security, and best practices.")
 
 # Session State
 if "upload_result" not in st.session_state:
@@ -53,7 +54,7 @@ if "repo_file_list" not in st.session_state:
     st.session_state.repo_file_list = []
 
 if "previous_input" not in st.session_state:
-    st.session_state.previous_input = "📁 Upload File"
+    st.session_state.previous_input = "Upload File"
 
 if "upload_code" not in st.session_state:
     st.session_state.upload_code = ""
@@ -80,14 +81,14 @@ if "language" not in st.session_state:
 # ------------------ Sidebar ------------------
 
 with st.sidebar:
-    st.header("⚙️ Settings")
+    st.header("Settings")
     mode = st.selectbox(
-        "🎯 Mode",
+        "Mode",
         ["Beginner", "Production"],
         key="mode"
     )
 
-    show_editor = st.checkbox("📝 Use Code Editor", key="show_editor")
+    show_editor = st.checkbox("Use Code Editor", key="show_editor")
 
     st.divider()
 
@@ -108,13 +109,14 @@ with st.sidebar:
         # ------------------ INPUT SOURCE TABS ------------------
         input_source = st.radio(
             "Input source",
-            ["📁 Upload File", "🔗 GitHub Repo"],
+            ["Upload File", "GitHub Repo"],
             horizontal=True,
             key="input_source",
         )
+        st.write(input_source)
 
         if st.session_state.previous_input != input_source:
-            if input_source == "🔗 GitHub Repo":
+            if input_source == "GitHub Repo":
                 st.session_state.upload_code = ""
                 st.session_state.upload_result = None
                 st.session_state.analysis_source = None
@@ -126,7 +128,7 @@ with st.sidebar:
             st.session_state.previous_input = input_source
 
         # ================== UPLOAD FILE TAB ==================
-        if input_source == "📁 Upload File":
+        if input_source == "Upload File":
 
             # If a previous action requested clearing the file uploader, remove the widget state
             if st.session_state.get("clear_uploaded_file"):
@@ -151,7 +153,7 @@ with st.sidebar:
             if st.session_state.upload_code:
                 st.caption(f"Selected: {uploaded_file.name if uploaded_file else 'file'}")
 
-                if st.button("🔍 Analyze File"):
+                if st.button("Analyze File"):
                     with st.spinner("Analyzing file..."):
                         st.session_state.upload_result = review_code(
                             st.session_state.upload_code, st.session_state.get("language", "Python"), mode
@@ -164,7 +166,7 @@ with st.sidebar:
 
             repo_url = st.text_input("GitHub repo URL", key="repo_url")
 
-            if st.button("📥 Load Repo Files"):
+            if st.button("Load Repo Files"):
 
                 try:
                     user, repo = parse_github_url(repo_url)
@@ -197,7 +199,7 @@ with st.sidebar:
                         selected_files.append(file)
 
             # ---------- ANALYZE REPO ----------
-            if st.button("🔗 Analyze Repo"):
+            if st.button("Analyze Repo"):
 
                 st.session_state.repo_results = []
 
@@ -226,7 +228,7 @@ with st.sidebar:
 
     # ------------------ RESET ------------------
 
-    if st.button("🔄 Reset App"):
+    if st.button("Reset App"):
         for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
@@ -237,7 +239,7 @@ with st.sidebar:
 # Render editor only when toggle is enabled in the sidebar
 if st.session_state.get("show_editor"):
 
-    st.markdown("## 📝 Code Editor")
+    st.markdown("## Code Editor")
 
     if "reset_trigger" in st.session_state and st.session_state.reset_trigger:
         st.session_state.editor_code = ""
@@ -249,7 +251,7 @@ if st.session_state.get("show_editor"):
         key="editor_code"
     )
 
-    if st.button("🚀 Review Code", key="review_editor"):
+    if st.button("Review Code", key="review_editor"):
         if st.session_state.editor_code.strip():
             with st.spinner("Analyzing code..."):
                 # Editor default language is Python
@@ -275,12 +277,12 @@ language = st.session_state.get("language", "Python")
 
 if st.session_state.upload_result or st.session_state.repo_results:
 
-    st.markdown("## 📊 Code Insights")
+    st.markdown("## Code Insights")
 
     tab1, tab2, tab3 = st.tabs([
-        "📌 Issues",
-        "💻 Code (Original)",
-        "📖 Explanation (Improved Code)"
+        "Issues",
+        "Code (Original)",
+        "Explanation (Improved Code)"
     ])
 
     # ------------------ Issues ------------------
@@ -361,4 +363,4 @@ if st.session_state.upload_result or st.session_state.repo_results:
             st.divider()
 
 else:
-    st.info("👈 Upload code or enter repo to start analysis")
+    st.info("Upload code or enter repo to start analysis")
