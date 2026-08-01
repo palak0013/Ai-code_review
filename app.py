@@ -11,8 +11,6 @@ def section_header(icon, text, size=18):
     </div>
     """
 
-# ------------------ Helpers ------------------
-
 def detect_language_from_filename(filename):
     ext = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
     ext_map = {
@@ -25,7 +23,6 @@ def detect_language_from_filename(filename):
     }
     return ext_map.get(ext, "Python")
 
-
 def split_output(text):
     try:
         issues = text.split("IMPROVED_CODE:")[0].replace("ISSUES:", "").strip()
@@ -34,7 +31,6 @@ def split_output(text):
         return issues, code_part, explanation
     except:
         return text, "", ""
-# ------------------ App Setup ------------------
 
 st.set_page_config(page_title="AI Code Review Assistant", layout="wide")
 st.title("AI Code Review Assistant")
@@ -77,9 +73,6 @@ if "previous_show_editor" not in st.session_state:
 if "language" not in st.session_state:
     st.session_state.language = "Python"
 
-
-# ------------------ Sidebar ------------------
-
 with st.sidebar:
     st.header("Settings")
     mode = st.selectbox(
@@ -92,7 +85,6 @@ with st.sidebar:
 
     st.divider()
 
-    # ------------------ INPUT SOURCE / Editor Toggle ------------------
     if st.session_state.get("show_editor"):
         st.info("Editor enabled: Upload and GitHub inputs hidden.")
 
@@ -106,15 +98,12 @@ with st.sidebar:
 
     else:
 
-        # ------------------ INPUT SOURCE TABS ------------------
         input_source = st.radio(
             "Input source",
             ["Upload File", "GitHub Repo"],
             horizontal=True,
             key="input_source",
         )
-        st.write(input_source)
-
         if st.session_state.previous_input != input_source:
             if input_source == "GitHub Repo":
                 st.session_state.upload_code = ""
@@ -127,7 +116,6 @@ with st.sidebar:
 
             st.session_state.previous_input = input_source
 
-        # ================== UPLOAD FILE TAB ==================
         if input_source == "Upload File":
 
             # If a previous action requested clearing the file uploader, remove the widget state
@@ -161,7 +149,6 @@ with st.sidebar:
                         st.session_state.analysis_source = "upload"
                         st.session_state.repo_results = []
 
-        # ================== GITHUB REPO TAB ==================
         else:
 
             repo_url = st.text_input("GitHub repo URL", key="repo_url")
@@ -187,7 +174,6 @@ with st.sidebar:
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-            # ---------- FILE SELECTION ----------
             selected_files = []
 
             if "repo_file_list" in st.session_state:
@@ -198,7 +184,6 @@ with st.sidebar:
                     if st.checkbox(file["name"], key=file["name"]):
                         selected_files.append(file)
 
-            # ---------- ANALYZE REPO ----------
             if st.button("Analyze Repo"):
 
                 st.session_state.repo_results = []
@@ -226,15 +211,10 @@ with st.sidebar:
 
     st.divider()
 
-    # ------------------ RESET ------------------
-
     if st.button("Reset App"):
         for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
-
-
-# ------------------ Code Editor ------------------
 
 # Render editor only when toggle is enabled in the sidebar
 if st.session_state.get("show_editor"):
@@ -269,9 +249,6 @@ if st.session_state.get("show_editor"):
         else:
             st.warning("Please enter some code")
 
-
-# ------------------ Results ------------------
-
 # current language for upload/editor displays
 language = st.session_state.get("language", "Python")
 
@@ -285,7 +262,6 @@ if st.session_state.upload_result or st.session_state.repo_results:
         "Explanation (Improved Code)"
     ])
 
-    # ------------------ Issues ------------------
     with tab1:
 
         # Upload
@@ -305,7 +281,6 @@ if st.session_state.upload_result or st.session_state.repo_results:
             st.markdown(issues)
             st.divider()
 
-    # ------------------ Original Code ------------------
     with tab2:
 
         if st.session_state.upload_result:
@@ -326,7 +301,6 @@ if st.session_state.upload_result or st.session_state.repo_results:
             st.caption("Original code preview not shown")
             st.divider()
 
-    # ------------------ Explanation + Improved ------------------
     with tab3:
 
         # Upload
