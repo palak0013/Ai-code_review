@@ -57,7 +57,7 @@ AI-CODE/
 ### Clone the repository
 
 ```bash
-git clone https://github.com/your-username/your-repository.git
+git clone https://github.com/palak0013/Ai-code_review.git
 cd your-repository
 ```
 
