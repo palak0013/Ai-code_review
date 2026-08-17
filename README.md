@@ -112,7 +112,8 @@ streamlit run app.py
 
 ---
 
-## Usage####(you can use this application via uploading code file, uploading a repo or by using the in-built code editor)
+## Usage
+The application provides three ways to review code.
 
 ### Upload File
 
