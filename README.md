@@ -5,7 +5,7 @@ An AI-powered code review application built with **Python** and **Streamlit** th
 
 ## Live Demo
 
-**Application:** [AI Code Review Assistant](https://ai-codereview-production-5809.up.railway.app)
+**Application:** [AI Code Review Assistant](https://ai-code-review-2gsp.onrender.com)
 
 ---
 
